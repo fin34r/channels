@@ -346,9 +346,8 @@ standard Django ``LiveServerTestCase``:
 
 .. note::
 
-    You can't use an in-memory database for your live tests. Therefore
-    include a test database file name in your settings to tell Django to
-    use a file database if you use SQLite:
+    If you use SQLite, include a test database file name in your settings to
+    tell Django to use a file database:
 
     .. code-block:: python
 
@@ -362,9 +361,38 @@ standard Django ``LiveServerTestCase``:
             },
         }
 
-serve_static
-~~~~~~~~~~~~
+    In-memory SQLite test databases are passed to the server thread (as
+    Django's own ``LiveServerTestCase`` does, sharing the connection between
+    the two threads), but a file database is recommended, and is what
+    Channels' own tests use, because the server thread shares the test
+    database with the test process and closes its database connections when
+    it stops.
 
-Subclass ``ChannelsLiveServerTestCase`` with ``serve_static = True`` in order
-to serve static files (comparable to Django's ``StaticLiveServerTestCase``, you
-don't need to run collectstatic before or as a part of your tests setup).
+The live server runs in a separate thread rather than a forked child process,
+so it no longer has to spawn and synchronise a separate process, and
+``manage.py test --parallel`` is supported.
+
+static_handler
+~~~~~~~~~~~~~~
+
+Subclass ``ChannelsLiveServerTestCase`` with ``static_handler`` set in order
+to customise how static files are served (Django's ``StaticLiveServerTestCase``
+uses ``ASGIStaticFilesHandler``, which is also the default here, so you don't
+need to run collectstatic before or as a part of your tests setup).
+
+The ``serve_static`` and ``static_wrapper`` attributes are gone, replaced by
+``static_handler``.
+
+server_thread_class
+~~~~~~~~~~~~~~~~~~~
+
+The server runs in a ``threading.Thread`` built from ``server_thread_class``,
+which defaults to ``channels.testing.live.ChannelsLiveServerThread``. Set it
+on a subclass to customise how the server is started or stopped.
+
+startup_timeout
+~~~~~~~~~~~~~~~
+
+``server_thread_class.startup_timeout`` (default: ``10``) is the number of
+seconds ``setUpClass()`` waits for the server to report that it is listening.
+If the server thread exits before then, its exception is raised instead.

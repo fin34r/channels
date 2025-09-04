@@ -1,6 +1,25 @@
 Full release notes, with more details and upgrade information, are available at:
 https://channels.readthedocs.io/en/latest/releases
 
+UNRELEASED
+----------
+
+* Fixed ``ChannelsLiveServerTestCase`` under ``manage.py test --parallel``:
+  each live server thread now installs its own Twisted reactor, and the
+  server thread no longer rewrites the test database name. The
+  ``daphne>=4.2`` requirement is now explicit, as the ``channels[daphne]``
+  extra; 4.2.0 is the first daphne release supporting Python 3.13, and
+  Channels supports Python 3.13 and 3.14. The requirement is advisory: a
+  separately installed ``daphne>=4.0`` also works with the live server test
+  case.
+
+* Backwards-incompatible: the live server test case now runs its server in a
+  thread, and several of its attributes and testing hooks are gone:
+  ``serve_static`` is replaced by ``static_handler`` (which defaults to
+  Django's ``ASGIStaticFilesHandler``, so static files are always served),
+  ``static_wrapper`` and the ``_port`` attribute are removed, and the
+  ``ProtocolServerProcess`` hook is no longer part of the testing API.
+
 4.3.2 (2025-11-20)
 ------------------
 

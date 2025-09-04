@@ -5,6 +5,7 @@ docs/_build
 __pycache__/
 .cache
 *.sqlite3
+test_db.sqlite3*
 .tox/
 *.swp
 *.pyc

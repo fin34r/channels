@@ -157,13 +157,15 @@ class SeleniumMixin:
             self.fail(f"Timed out waiting for window.messageHandled after {timeout}s")
 
     def tearDown(self):
-        logs = self.web_driver.get_log("browser")
-        severe_logs = [entry for entry in logs if entry.get("level") == "SEVERE"]
+        web_driver = getattr(self, "web_driver", None)
+        if web_driver is not None:
+            logs = web_driver.get_log("browser")
+            severe_logs = [entry for entry in logs if entry.get("level") == "SEVERE"]
 
-        if severe_logs:
-            print("\n----Browser console SEVERE logs----")
-            for entry in severe_logs:
-                msg = entry.get("message")
-                print(f"[SEVERE] {msg}")
-        self.web_driver.quit()
+            if severe_logs:
+                print("\n----Browser console SEVERE logs----")
+                for entry in severe_logs:
+                    msg = entry.get("message")
+                    print(f"[SEVERE] {msg}")
+            web_driver.quit()
         super().tearDown()

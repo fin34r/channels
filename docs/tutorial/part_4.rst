@@ -58,7 +58,6 @@ Put the following code in ``chat/tests.py``:
 
 
     class ChatTests(ChannelsLiveServerTestCase):
-        serve_static = True  # emulate StaticLiveServerTestCase
 
         @classmethod
         def setUpClass(cls):
@@ -160,9 +159,12 @@ suites for end-to-end tests (``StaticLiveServerTestCase`` or ``LiveServerTestCas
 that URLs inside the Channels routing configuration like ``/ws/room/ROOM_NAME/``
 will work inside the suite.
 
-We are using ``sqlite3``, which for testing, is run as an in-memory database, and therefore, the tests will not run correctly.
-We need to tell our project that the ``sqlite3`` database need not to be in memory for run the tests. Edit the
-``mysite/settings.py`` file and add the ``TEST`` argument to the **DATABASES** setting:
+We are using ``sqlite3``. For testing, Django runs it as an in-memory database
+by default: those connections are passed to the server thread, as in Django's
+own ``LiveServerTestCase``, but a file database is recommended, and is what
+Channels' sample project uses. We need to tell our project to use a file
+database for the tests. Edit the ``mysite/settings.py`` file and add the
+``TEST`` argument to the **DATABASES** setting:
 
 .. code-block:: python
 

@@ -8,7 +8,6 @@ from .selenium_mixin import SeleniumMixin
 
 
 class TestSampleApp(SeleniumMixin, ChannelsLiveServerTestCase):
-    serve_static = True
 
     def setUp(self):
         super().setUp()
@@ -51,6 +50,12 @@ class TestSampleApp(SeleniumMixin, ChannelsLiveServerTestCase):
         messageCount = self.find_element(By.ID, "messageCount")
         self.assertIsNotNone(messageCount, "Message count should be present")
         self.assertEqual(messageCount.text, "1")
+
+        # The message was created through the live server, so it must be in the
+        # same database the test process queries.
+        self.assertTrue(
+            Message.objects.filter(title="Test Title", message="Test Message").exists()
+        )
 
     def test_real_time_delete_message(self):
         self._create_message()
