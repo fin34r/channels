@@ -6,7 +6,7 @@ SECRET_KEY = "Not_a_secret_key"
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
     "daphne",
@@ -23,6 +23,10 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # A sync-only middleware above async-capable ones, as deployed projects
+    # (and the project this regression was reported against) have. Django
+    # adapts it with an ``async_to_sync`` bridge in the handler's chain.
+    "tests.sample_project.sampleapp.middleware.SyncOnlyMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -65,6 +69,13 @@ DATABASES = {
         # in tests for SQLite, since that avoids connection.close() working.
         "TEST": {"NAME": "test_db.sqlite3"},
     }
+}
+
+# Set explicitly: Django 2028 will not have a default mailer.
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+    },
 }
 
 

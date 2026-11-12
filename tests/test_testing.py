@@ -2,12 +2,14 @@ import asyncio
 from urllib.parse import unquote
 
 import pytest
+from django.test import TransactionTestCase
 from django.urls import path
 
 from channels.consumer import AsyncConsumer
 from channels.generic.websocket import WebsocketConsumer
 from channels.routing import URLRouter
 from channels.testing import HttpCommunicator, WebsocketCommunicator
+from channels.testing.live import ChannelsLiveServerTestCase
 
 
 class SimpleHttpApp(AsyncConsumer):
@@ -196,3 +198,49 @@ async def test_connection_scope(path):
     connected, _ = await communicator.connect()
     assert connected
     await communicator.disconnect()
+
+
+class _MinimalServerThread:
+    """A ``server_thread_class`` with only the ``Thread`` shape and terminate()."""
+
+    def __init__(self, *args, **kwargs):
+        self.quiesced = False
+
+    def run(self):
+        pass
+
+    def terminate(self):
+        pass
+
+
+def _live_server_case(thread_class):
+    class LiveServerCase(ChannelsLiveServerTestCase):
+        server_thread_class = thread_class
+
+        def test_placeholder(self):
+            pass
+
+    case = LiveServerCase("test_placeholder")
+    case.server_thread = thread_class()
+    return case
+
+
+def test_fixture_teardown_tolerates_server_thread_without_quiesce(monkeypatch):
+    """The extension point must not require quiesce(): run/terminate suffice."""
+    case = _live_server_case(_MinimalServerThread)
+    # Patch only the database flush: this is a unit test of the guard around it.
+    monkeypatch.setattr(TransactionTestCase, "_fixture_teardown", lambda self: None)
+    case._fixture_teardown()
+
+
+def test_fixture_teardown_quiesces_server_thread_when_available(monkeypatch):
+    """A server thread which does implement quiesce() is still asked to."""
+
+    class QuiescingServerThread(_MinimalServerThread):
+        def quiesce(self):
+            self.quiesced = True
+
+    case = _live_server_case(QuiescingServerThread)
+    monkeypatch.setattr(TransactionTestCase, "_fixture_teardown", lambda self: None)
+    case._fixture_teardown()
+    assert case.server_thread.quiesced

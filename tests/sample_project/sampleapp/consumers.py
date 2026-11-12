@@ -3,6 +3,10 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .models import Message
 
+# Close codes of consumers torn down with their socket still open; a
+# consumer the shutdown had to cancel never runs ``disconnect``.
+disconnect_codes: list[int | None] = []
+
 
 class LiveMessageConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
@@ -11,6 +15,7 @@ class LiveMessageConsumer(AsyncJsonWebsocketConsumer):
         await self.send_current_state()
 
     async def disconnect(self, close_code):
+        disconnect_codes.append(close_code)
         await self.channel_layer.group_discard("live_message", self.channel_name)
 
     @database_sync_to_async
