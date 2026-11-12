@@ -20,6 +20,19 @@ UNRELEASED
   ``static_wrapper`` and the ``_port`` attribute are removed, and the
   ``ProtocolServerProcess`` hook is no longer part of the testing API.
 
+* The thread-based live server now shuts down gracefully. In-flight ASGI work,
+  and thread-sensitive work started alongside it, is drained or retired at
+  teardown within a bounded grace period; open websocket subscribers get the
+  WebSocket-recommended close plus a ``disconnect`` message instead of being
+  cancelled; and requests abandoned by a client which has gone are quiesced
+  before the test database is flushed, so they no longer reach rows that
+  teardown has already removed. Two class attributes bound the cost:
+  ``shutdown_grace_period`` (default 5 seconds) and the new
+  ``shutdown_cancel_timeout`` (default 5 seconds). As a live server takes
+  ownership of the process-global reactor, thread-sensitive executor, event
+  loop and ``txaio`` state it runs on, only one live server may run in a
+  process at a time.
+
 4.3.2 (2025-11-20)
 ------------------
 
